@@ -4,18 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ecommerce page</title>
-    <script>
-        https://dummyjson.com/products
-        
-        fetch("https://dummyjson.com/products")
-            .then(data => data.json())
-        .then(data => data.products)
-        .then(data=>console.log(data))
-        document.getElementById("demo").innerHTML=0
-    </script>
 </head>
 <body>
     <p id="products"></p>
-    
+    <script>
+        document.getElementById("products").innerHTML = "Loading products...";
+        
+        fetch("https://dummyjson.com/products")
+            .then(data => data.json())
+            .then(data => {
+                
+                data.products.forEach(product => {
+                    const html = '<div style="display:inline-block; margin:10px; padding:15px; border:1px solid #ddd; border-radius:8px; width:280px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">' + 
+                        '<h3>' + product.id + ' - ' + product.title + '</h3>' +
+                        '<img src="' + product.images[0] + '" style="width:100%; height:auto; border-radius:5px;"/>' +
+                        '<p style="font-size:18px; font-weight:bold; color:#27ae60;">$' + product.price + '</p>' +
+                    '</div>';
+                    document.getElementById("products").innerHTML += html;
+                });
+                const html = '<div>' + product.id + ' - ' + product.title + '<img src="' + product.images[0] + '" width="400px" height="400px"/><p>' + product.price + '</p></div>';
+                document.getElementById("products").innerHTML = html;
+                console.log(data.products);
+            })
+            .catch(error => console.error("Error fetching data:", error))
+            .finally(() => {
+                // Inject CSS for improved layout and interactions
+                const css = `
+                    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f5f7fb; margin:20px; color:#333; }
+                    .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
+                    .search { padding:8px 12px; border-radius:8px; border:1px solid #ccc; width:240px; }
+                    .sort { padding:8px 12px; border-radius:8px; border:1px solid #ccc; }
+                    #products { display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; padding:0; margin:0; }
+                    #products > div { 
+                        background:#fff; padding:16px; border-radius:10px; width:280px; box-shadow:0 6px 18px rgba(20,20,45,0.06);
+                        transition: transform 180ms ease, box-shadow 180ms ease; cursor:default;
+                    }
+                    #products > div:hover { transform: translateY(-6px); box-shadow:0 12px 30px rgba(20,20,45,0.08); }
+                    #products h3 { font-size:16px; margin:6px 0 8px; color:#222; }
+                    #products img { width:100% !important; height:auto !important; border-radius:8px; display:block; margin-bottom:10px; }
+                    .price { font-size:18px; font-weight:700; color:#16a34a; margin:6px 0; }
+                    .add-btn { background:#2563eb; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; margin-top:8px; }
+                    .add-btn:hover { background:#1e40af; }
+                    .hidden { display:none !important; }
+                    .cart { position:fixed; right:20px; top:20px; background:#111827; color:white; padding:10px 14px; border-radius:999px; box-shadow:0 8px 30px rgba(2,6,23,0.3); z-index:9999; display:flex; gap:8px; align-items:center; font-weight:600; }
+                    .badge { background:#ef4444; color:white; padding:4px 8px; border-radius:999px; font-size:13px; }
+                    @media (max-width:720px) {
+                        #products > div { width:100% !important; }
+                        .controls { flex-direction:column; align-items:stretch; gap:8px; }
+                    }
+                `;
+                const style = document.createElement('style');
+                style.textContent = css;
+                document.head.appendChild(style);
+
+                // Build simple controls (search + sort)
+                const productsEl = document.getElementById('products');
+                const controls = document.createElement('div');
+                controls.className = 'controls';
+                controls.innerHTML = `
+                    <input class="search" placeholder="Search products by title..." />
+                    <select class="sort">
+                        <option value="default">Sort: Default</option>
+                        <option value="price-asc">Price: Low → High</option>
+                        <option value="price-desc">Price: High → Low</option>
+                    </select>
+                `;
+                productsEl.parentNode.insertBefore(controls, productsEl);
+
+                const searchInput = controls.querySelector('.search');
+                const sortSelect = controls.querySelector('.sort');
+
+                // Create simple cart widget
+                const cart = document.createElement('div');
+                cart.className = 'cart';
+                cart.innerHTML = 'Cart <span class="badge">0</span>';
+                document.body.appendChild(cart);
+                const badge = cart.querySelector('.badge');
+                let cartCount = 0;
+
+                // Enhance existing product cards: add classes, add Add-to-cart buttons
+                const cards = Array.from(productsEl.children).filter(n => n.nodeType === 1);
+                cards.forEach(card => {
+                    card.classList.add('product-card');
+                    // remove overly specific inline width to let responsive CSS work (safe to clear)
+                    card.style.width = null;
+                    // Normalize price paragraph to use .price class
+                    const p = card.querySelector('p');
+                    if (p) {
+                        p.classList.add('price');
+                    }
+                    // Add Add-to-cart button
+                    const btn = document.createElement('button');
+                    btn.className = 'add-btn';
+                    btn.textContent = 'Add to cart';
+                    btn.addEventListener('click', () => {
+                        cartCount++;
+                        badge.textContent = cartCount;
+                        // tiny feedback
+                        btn.textContent = 'Added ✓';
+                        btn.disabled = true;
+                        setTimeout(() => {
+                            btn.textContent = 'Add to cart';
+                            btn.disabled = false;
+                        }, 900);
+                    });
+                    card.appendChild(btn);
+                });
+
+                // Search/filter logic
+                searchInput.addEventListener('input', (e) => {
+                    const q = e.target.value.trim().toLowerCase();
+                    cards.forEach(card => {
+                        const title = (card.querySelector('h3')?.textContent || '').toLowerCase();
+                        card.classList.toggle('hidden', q !== '' && !title.includes(q));
+                    });
+                });
+
+                // Sort logic by price (reads numeric value from price element)
+                function getPrice(card) {
+                    const priceText = card.querySelector('.price')?.textContent || '';
+                    const num = parseFloat(priceText.replace(/[^0-9.]/g, '')) || 0;
+                    return num;
+                }
+                sortSelect.addEventListener('change', () => {
+                    const mode = sortSelect.value;
+                    let ordered = cards.slice();
+                    if (mode === 'price-asc') {
+                        ordered.sort((a,b) => getPrice(a) - getPrice(b));
+                    } else if (mode === 'price-desc') {
+                        ordered.sort((a,b) => getPrice(b) - getPrice(a));
+                    } // default: keep original order
+                    // Re-append in new order
+                    ordered.forEach(c => productsEl.appendChild(c));
+                });
+            });
+    </script>
 </body>
 </html>
