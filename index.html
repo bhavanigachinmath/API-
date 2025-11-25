@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ecommerce page</title>
+    <script>
+        https://dummyjson.com/products
+        
+        fetch("https://dummyjson.com/products")
+            .then(data => data.json())
+        .then(data => data.products)
+        .then(data=>console.log(data))
+        document.getElementById("demo").innerHTML=0
+    </script>
 </head>
 <body>
+    <p id="products"></p>
     
 </body>
 </html>
